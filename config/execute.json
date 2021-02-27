@@ -1,0 +1,38 @@
+[
+	{
+		"title": "Open terminal",
+		"cmd": " "
+	},
+	{
+		"title": "Htop",
+		"cmd": "htop"
+	},
+	{
+		"title": "List screens",
+		"cmd": "screen -ls"
+	},
+	{
+		"title": "Check apache2 status",
+		"cmd": "systemctl status apache2"
+	},
+	{
+		"title": "Whoami",
+		"cmd": "whoami"
+	},
+	{
+		"title": "Rand percent",
+		"cmd": "echo $(( ( RANDOM % 100 )  + 1 ))"
+	},
+	{
+		"title": "Ping",
+		"cmd": "ping -c 4 google.com"
+	},
+	{
+		"title": "Debug: kernel log",
+		"cmd": "tail -F /var/log/kern.log"
+	},
+	{
+		"title": "Scan servces per port",
+		"cmd": "netstat -auntp | grep 'LISTEN' | awk '{print $4 \" \" $7}' | sed -E \"s~(.*):([0-9]+)~\\\\2~\" | sed -E \"s~(\\\\s.*)/(.*)~ \\\\2~\" | sort -k 1,1 | uniq -c | awk -F ' ' '{print $3 \" \" $2 \" \" $1 }' | column -t"
+	}
+]

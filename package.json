@@ -1,0 +1,44 @@
+{
+  "name": "nktty",
+  "version": "0.2.0",
+  "description": "Remote hosts management and automation.",
+  "main": "bin/nktty.js",
+  "scripts": {
+    "nktty": "bin/nktty.js",
+    "build": "mkdir builds && pkg bin/nktty.js --targets=latest-linux-x64,latest-win-x64,latest-macos-x64  --out-path builds/"
+  },
+  "dependencies": {
+    "cli-progress": "^3.9.0",
+    "colors": "^1.4.0",
+    "prompts": "^2.4.0",
+    "ssh2": "^0.8.9",
+    "yargs": "^16.2.0"
+  },
+  "bin": {
+    "nktty": "./bin/nktty.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reekol/nktty.git"
+  },
+  "keywords": [
+    "hosts",
+    "remote",
+    "linux",
+    "stats",
+    "monitoring",
+    "automation",
+    "terminal",
+    "interactive"
+  ],
+  "author": "Nikolay Terziev - ReeKol <cupuyc@gmail.com>",
+  "license": "GPL",
+  "bugs": {
+    "url": "https://github.com/reekol/nktty/issues"
+  },
+  "homepage": "https://github.com/reekol/nktty#readme",
+  "directories": {
+    "bin": "bin",
+    "config": "config"
+  }
+}

@@ -1,0 +1,23 @@
+[
+	{
+		"title": "host1",
+		"addr": "192.168.1.1",
+		"user": "root",
+		"port":22,
+		"keyFile":"/home/user/.ssh/id_rsa",
+		"cmd":null },
+	{ 
+		"title": "host2",
+		"addr": "192.168.1.2",
+		"user": "root",
+		"port":22,
+		"keyFile":"/home/user/.ssh/id_rsa",
+		"cmd":null },
+ 	{ 
+ 		"title": "host3",
+ 		"addr": "192.168.1.3",
+ 		"user": "root",
+ 		"port":22,
+ 		"keyFile":"/home/user/.ssh/id_rsa",
+ 		"cmd":null }
+]

@@ -1,0 +1,44 @@
+[
+	{
+		"name":" Load ",
+		"cmd":"echo  `cat /proc/loadavg | cut -d ' ' -f1`  `nproc` | awk '{printf \"%f\", ($1 / $2) * 100}'",
+		"type":"bar",
+		"suffix":"%"
+	},
+	{
+		"name":" Mem ",
+		"cmd":"free -m | awk 'NR==2{printf \"%.2f%\", $3*100/$2 }'",
+		"type":"bar",
+		"suffix":"%"
+	},
+	{
+		"name":" Disk ",
+		"cmd":"df -h | awk '$NF==\"/\"{printf \"%s\", $5}' | tr '%' ' '",
+		"type":"bar",
+		"suffix":"%"
+	},
+ 	{
+ 		"name":" Temp:",
+ 		"cmd":"a=$(cat /sys/class/thermal/thermal_zone0/temp) ; echo $( expr $a / 1000)",
+ 		"type":"bar",
+ 		"suffix":"\u00B0C"
+ 	},
+ 	{
+		"name":"(Time lag): ",
+		"cmd":"curl -w \"date: %{time_connect}\" -s --head https://google.com | grep ^date: | sed 's/date: //gi' | awk '{ if(NR == 1){ system(\"date -d \\\"\" $0 \"\\\" +\\\"%s\\\" \")  } if(NR==2){ print $0;system(\"date +\\\"%s\\\"\") } }' | tr '\n' ' ' | tr ',' '.' | awk '{print $3 \" - ( \" $1 \" - \"  $2 \" )\" }' | bc | awk '{ printf \"%f\", $0}'",
+		"type":"text",
+		"suffix":""
+ 	},
+ 	{
+ 		"name":"(Time. Clock): ",
+ 		"cmd":"date +'%Y-%m-%d %H:%M:%S'",
+ 		"type":"text",
+ 		"suffix":""
+ 	},
+ 	{
+ 		"name":"(Screens):",
+ 		"cmd":"screen -ls | wc  -l |  awk '{print $1-2}'",
+ 		"type":"text",
+ 		"suffix":""
+ 	}
+]
