@@ -21,6 +21,8 @@ Download builds for your distro from [Releases](https://github.com/reekol/nktty/
 ./nktty-linux -C ../config/commandsAll.json -E ../config/execute.json -R ../config/remotes.json --remotes="host1|host2"
 # OR for other options
 ./nktty-linux --help
+# To build example configuration files for standalone usage:
+./nktty-linux -B
 ```
 
 ## Options:
@@ -32,6 +34,7 @@ Options:
   -R, --config-remotes      override path to reomtes.json               [string]
   -C, --config-commandsall  override path to commandsAll.json           [string]
   -E, --config-execute      override path to execute.json               [string]
+  -B, --config-build        Build example config. files
   -h, --help                Show help                                  [boolean]
   -v, --version             Show version number                        [boolean]
 ```
