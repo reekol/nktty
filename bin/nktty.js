@@ -8,7 +8,10 @@ const colors = require('colors')
 const prompts = require('prompts')
 const d = console.log
 const cwd = process.cwd()
-
+const cnfFileRemotes = 'remotes.json'
+const cnfFileCommandsAll = 'commandsAll.json'
+const cnfFileExecute = 'execute.json'
+const username = require("os").userInfo().username
 
 const argv = yargs
     .option('remotes', {
@@ -41,6 +44,11 @@ const argv = yargs
         description: 'override path to execute.json',
         type: 'string',
     })
+	 .option('config-build', {
+        alias: 'B',
+        description: 'Build example config. files',
+        type: 'bool',
+    })
 
     .help()
     .alias('help', 'h')
@@ -49,12 +57,31 @@ const argv = yargs
 	 .argv
 
 prompts.override(yargs.argv)
+if(argv.B){
+	d('Building configuration files.'.green)
+	let exampleHost = {title: "host1",addr: "192.168.1.10",user: "root",port:22,keyFile:"/home/" + username + "/.ssh/id_rsa",cmd:null}
+	let exampleCommands = [
+		{name:"[RNG] ",  cmd: "echo $(( ( RANDOM % 100 )  + 1 ))", type: "bar", suffix: "%"},
+		{name:" Time: ", cmd: "date +'%Y-%m-%d %H:%M:%S'", type: "text", suffix: ""}
+	]
+	let exampleStageTwo = [{title: "Terminal",cmd: " "},{title: "Htop",cmd: "htop"}]
+	d('Creating: ' + cnfFileRemotes.green)
+	fs.writeFileSync(cnfFileRemotes,JSON.stringify([exampleHost,exampleHost,exampleHost], null, 4))
+	d('Creating: ' + cnfFileCommandsAll.green)
+	fs.writeFileSync(cnfFileCommandsAll,JSON.stringify(exampleCommands, null, 4))
+	d('Creating: ' + cnfFileExecute.green)
+	fs.writeFileSync(cnfFileExecute,JSON.stringify(exampleStageTwo, null, 4))
+
+	d('Example usage:'.yellow)
+	d(('./' + argv['$0'] + ' -R ' + cnfFileRemotes + ' -C ' + cnfFileCommandsAll+ ' -E ' + cnfFileExecute + ' ').white.bgBlack)
+	process.exit()
+}
 
 const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
 
-const hostsFull = loadConf( argv.R ? argv.R : cwd + '/config/remotes.json' )
-const commandsAll = loadConf( argv.C ? argv.C : cwd + '/config/commandsAll.json' )
-const stageTwo  = loadConf( argv.E ? argv.E : cwd + '/config/execute.json' )
+const hostsFull = loadConf( argv.R ? argv.R : cwd + '/config/' + cnfFileRemotes )
+const commandsAll = loadConf( argv.C ? argv.C : cwd + '/config/' + cnfFileCommandsAll )
+const stageTwo  = loadConf( argv.E ? argv.E : cwd + '/config/' + cnfFileExecute )
 
 const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : argv.remotes
 const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : argv.execute

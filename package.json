@@ -5,7 +5,7 @@
   "main": "bin/nktty.js",
   "scripts": {
     "nktty": "bin/nktty.js",
-    "build": "mkdir builds && pkg bin/nktty.js --targets=latest-linux-x64,latest-win-x64,latest-macos-x64  --out-path builds/"
+    "build": "rm -rf builds && mkdir builds && pkg bin/nktty.js --targets=latest-linux-x64,latest-win-x64,latest-macos-x64  --out-path builds/"
   },
   "dependencies": {
     "cli-progress": "^3.9.0",
