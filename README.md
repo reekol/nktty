@@ -220,7 +220,8 @@ bash: asdd: command not found
  For exemple:
  To execute stack of commands on each host, you can put them into file and provide it as an input to user defined execution (--ude, -u).
  lets, put those lines into
- test.sh
+
+File test.sh
 ```bash
 date && \
 whoami && \
