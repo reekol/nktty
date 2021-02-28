@@ -218,7 +218,7 @@ bash: asdd: command not found
 ## Advanced usage.
  - All params accept file paths as input when using '@' at the begining.
  For exemple:
- To execute stack of commands on each host, you can put them into file and provide it as aninpud to user defined execution (--ude, -u).
+ To execute stack of commands on each host, you can put them into file and provide it as an input to user defined execution (--ude, -u).
  lets, put those lines into
  test.sh
 ```bash
