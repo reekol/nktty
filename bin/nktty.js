@@ -78,14 +78,15 @@ if(argv.B){
 }
 
 const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
+const cliParamParse = param => (param.charAt(0) === '@' ? fs.readFileSync(param.substring(1)) : param)
 
 const hostsFull = loadConf( argv.R ? argv.R : cwd + '/config/' + cnfFileRemotes )
 const commandsAll = loadConf( argv.C ? argv.C : cwd + '/config/' + cnfFileCommandsAll )
 const stageTwo  = loadConf( argv.E ? argv.E : cwd + '/config/' + cnfFileExecute )
 
-const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : argv.remotes
-const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : argv.execute
-const initialUdeFilter     = typeof argv.ude     === 'undefined' ? '' : argv.ude
+const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : cliParamParse(argv.remotes)
+const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : cliParamParse(argv.execute)
+const initialUdeFilter     = typeof argv.ude     === 'undefined' ? '' : cliParamParse(argv.ude)
 
 if(initialExecuteFilter !== '' && initialRemotesFilter === '')
 	throw new Error('You can not set intial execution filters [--execute,-e] without setting initial remotes filter [--remotes,-r]')

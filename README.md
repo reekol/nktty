@@ -212,3 +212,62 @@ bash: asdd: command not found
  - + host: Title of the host of which it was received.
  - + command: Title of the command executed (Or U.D.E. when --ude, -u options are used).
  - + <!\[CDATA\[\n .. \n\]\]> containing the actual output.
+
+
+---
+## Advanced usage.
+ - All params accept file patsh as input when using '@' at the begining.
+ For exemple:
+ To execute stack of commands on each host, you can put them into file and provide it as aninpud to user defined execution (--ude, -u).
+ lets, put those lines into
+ test.sh
+```bash
+date && \
+whoami && \
+ping -c 1 google.com && \
+echo $(( ( RANDOM % 100 )  + 1 ))
+```
+And call:
+```bash
+nktty -r 'host1|host2' -u '@test.sh'
+```
+
+The resut is:
+```XML
+<STDOUT time="2021-02-28T11:30:08.000Z" host="host2" command="U.D.E."><![CDATA[
+Sun Feb 28 13:30:07 EET 2021
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.008Z" host="host2" command="U.D.E."><![CDATA[
+root
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.042Z" host="host1" command="U.D.E."><![CDATA[
+Sun Feb 28 13:30:08 EET 2021
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.082Z" host="host1" command="U.D.E."><![CDATA[
+root
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.082Z" host="host2" command="U.D.E."><![CDATA[
+PING google.com (216.58.214.142) 56(84) bytes of data.
+64 bytes from fra16s06-in-f142.1e100.net (216.58.214.142): icmp_seq=1 ttl=117 time=2.09 ms
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.083Z" host="host2" command="U.D.E."><![CDATA[
+--- google.com ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 2.094/2.094/2.094/0.000 ms
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.083Z" host="host2" command="U.D.E."><![CDATA[
+37
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.099Z" host="host1" command="U.D.E."><![CDATA[
+PING google.com (142.250.184.142) 56(84) bytes of data.
+64 bytes from sof02s43-in-f14.1e100.net (142.250.184.142): icmp_seq=1 ttl=117 time=1.86 ms
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.100Z" host="host1" command="U.D.E."><![CDATA[
+--- google.com ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 1.863/1.863/1.863/0.000 ms
+]]></STDOUT>
+<STDOUT time="2021-02-28T11:30:08.101Z" host="host1" command="U.D.E."><![CDATA[
+91
+]]></STDOUT>
+```
