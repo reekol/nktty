@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+const os = require('os')
 const fs = require('fs')
 const yargs = require('yargs')
 const SSH2 = require('ssh2')
@@ -8,10 +8,11 @@ const colors = require('colors')
 const prompts = require('prompts')
 const d = console.log
 const cwd = process.cwd()
-const cnfFileRemotes = 'remotes.json'
-const cnfFileCommandsAll = 'commandsAll.json'
-const cnfFileExecute = 'execute.json'
 const username = require("os").userInfo().username
+
+let cnfFileRemotes = 'remotes.json'
+let cnfFileCommandsAll = 'commandsAll.json'
+let cnfFileExecute = 'execute.json'
 
 const argv = yargs
     .option('remotes', {
@@ -47,7 +48,7 @@ const argv = yargs
 	 .option('config-build', {
         alias: 'B',
         description: 'Build example config. files',
-        type: 'bool',
+        type: 'string',
     })
 
     .help()
@@ -58,6 +59,16 @@ const argv = yargs
 
 prompts.override(yargs.argv)
 if(argv.B){
+	if(!fs.existsSync(argv.B)) throw new Error('Unable to create config files. Diretory ' + argv.B + ' does not exists!')
+	let dirname = argv.B
+	cnfFileRemotes = dirname + '/' + cnfFileRemotes
+	cnfFileCommandsAll = dirname + '/' + cnfFileCommandsAll
+	cnfFileExecute = dirname + '/' + cnfFileExecute
+
+	if(fs.existsSync(cnfFileCommandsAll)) throw new Error('File ' + cnfFileCommandsAll + ' already exists.')
+	if(fs.existsSync(cnfFileExecute)) throw new Error('File ' + cnfFileExecute + ' already exists.')
+	if(fs.existsSync(cnfFileRemotes)) throw new Error('File ' + cnfFileRemotes + ' already exists.')
+
 	d('Building configuration files.'.green)
 	let exampleHost = {title: "host1",addr: "192.168.1.10",user: "root",port:22,keyFile:"/home/" + username + "/.ssh/id_rsa",cmd:null}
 	let exampleCommands = [
@@ -70,19 +81,35 @@ if(argv.B){
 	d('Creating: ' + cnfFileCommandsAll.green)
 	fs.writeFileSync(cnfFileCommandsAll,JSON.stringify(exampleCommands, null, 4))
 	d('Creating: ' + cnfFileExecute.green)
-	fs.writeFileSync(cnfFileExecute,JSON.stringify(exampleStageTwo, null, 4))
+	fs.writeFileSync( cnfFileExecute,JSON.stringify(exampleStageTwo, null, 4))
 
 	d('Example usage:'.yellow)
-	d(('./' + argv['$0'] + ' -R ' + cnfFileRemotes + ' -C ' + cnfFileCommandsAll+ ' -E ' + cnfFileExecute + ' ').white.bgBlack)
+	d(('./' + argv['$0'] + ' -R ' + cnfFileRemotes + ' -C ' + cnfFileCommandsAll + ' -E ' + cnfFileExecute + ' ').white.bgBlack)
 	process.exit()
 }
+
+let cnfFileGuess = (cnfFile) => {
+	let f =  cnfFile.toString('utf8')
+	cnfFile = os.homedir() + '/.nktty/' + f
+	if(fs.existsSync(cnfFile)) return cnfFile
+	cnfFile = cwd + '/' + f
+	if(fs.existsSync(cnfFile)) return cnfFile
+	cnfFile = cwd + '/config/' + f
+	if(fs.existsSync(cnfFile)) return cnfFile
+	throw new Error('No configuration found for: ' + f)
+}
+
+cnfFileRemotes = cnfFileGuess(cnfFileRemotes)
+cnfFileCommandsAll = cnfFileGuess(cnfFileCommandsAll)
+cnfFileExecute = cnfFileGuess(cnfFileExecute)
+//d("Config files in use\n", cnfFileRemotes, cnfFileExecute, cnfFileCommandsAll)
 
 const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
 const cliParamParse = param => (param.charAt(0) === '@' ? fs.readFileSync(param.substring(1)) : param)
 
-const hostsFull = loadConf( argv.R ? argv.R : cwd + '/config/' + cnfFileRemotes )
-const commandsAll = loadConf( argv.C ? argv.C : cwd + '/config/' + cnfFileCommandsAll )
-const stageTwo  = loadConf( argv.E ? argv.E : cwd + '/config/' + cnfFileExecute )
+const hostsFull = loadConf( argv.R ? argv.R : cnfFileRemotes )
+const commandsAll = loadConf( argv.C ? argv.C : cnfFileCommandsAll )
+const stageTwo  = loadConf( argv.E ? argv.E : cnfFileExecute )
 
 const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : cliParamParse(argv.remotes)
 const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : cliParamParse(argv.execute)
