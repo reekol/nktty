@@ -15,47 +15,46 @@ let cnfFileCommandsAll = 'commandsAll.json'
 let cnfFileExecute = 'execute.json'
 
 const argv = yargs
-    .option('remotes', {
-        alias: 'r',
-        description: 'Filter remote hosts.(regex)',
-        type: 'string',
-    })
-    .option('execute', {
-        alias: 'e',
-        description: 'Filter tasks to executed.(regex)',
-        type: 'string',
-    })
-    .option('ude', {
-        alias: 'u',
-        description: 'User Defined Execution: (Command).',
-        type: 'string',
-    })
-    .option('config-remotes', {
-        alias: 'R',
-        description: 'override path to reomtes.json',
-        type: 'string',
-    })
-    .option('config-commandsall', {
-        alias: 'C',
-        description: 'override path to commandsAll.json',
-        type: 'string',
-    })
-	 .option('config-execute', {
-        alias: 'E',
-        description: 'override path to execute.json',
-        type: 'string',
-    })
-	 .option('config-build', {
-        alias: 'B',
-        description: 'Build example config. files',
-        type: 'string',
-    })
-
-    .help()
-    .alias('help', 'h')
-    .version()
-    .alias('version', 'v')
-	 .argv
+	.option('remotes', {
+		alias: 'r',
+		description: 'Filter remote hosts.(regex)',
+		type: 'string',
+	})
+	.option('execute', {
+		alias: 'e',
+		description: 'Filter tasks to executed.(regex)',
+		type: 'string',
+	})
+	.option('ude', {
+		alias: 'u',
+		description: 'User Defined Execution: (Command).',
+		type: 'string',
+	})
+	.option('config-remotes', {
+		alias: 'R',
+		description: 'override path to reomtes.json',
+		type: 'string',
+	})
+	.option('config-commandsall', {
+		alias: 'C',
+		description: 'override path to commandsAll.json',
+		type: 'string',
+	})
+	.option('config-execute', {
+		alias: 'E',
+		description: 'override path to execute.json',
+		type: 'string',
+	})
+	.option('config-build', {
+		alias: 'B',
+		description: 'Build example config. files',
+		type: 'string',
+	})
+	.help()
+	.alias('help', 'h')
+	.version()
+	.alias('version', 'v')
+	.argv
 
 prompts.override(yargs.argv)
 if(argv.B){
