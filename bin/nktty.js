@@ -186,7 +186,9 @@ let hostsInfo = async (i,h) => {
 			host: h.addr,
 			port: h.port,
 			username: h.user,
-			privateKey: fs.readFileSync(h.keyFile)
+			privateKey: fs.readFileSync(h.keyFile),
+			agent: process.env.SSH_AUTH_SOCK,
+			forwardAgent: true
 		})
 	}catch(e){ 
 		error = e.message
