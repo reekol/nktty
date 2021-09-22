@@ -2,7 +2,7 @@
 const os = require('os')
 const fs = require('fs')
 const yargs = require('yargs')
-const SSH2 = require('ssh2')
+const SSH2 = require('ssh2').Client
 const cliProgress = require('cli-progress')
 const colors = require('colors')
 const prompts = require('prompts')
@@ -13,6 +13,7 @@ const username = require("os").userInfo().username
 let cnfFileRemotes = 'remotes.json'
 let cnfFileCommandsAll = 'commandsAll.json'
 let cnfFileExecute = 'execute.json'
+
 
 const argv = yargs
 	.option('remotes', {

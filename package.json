@@ -1,6 +1,6 @@
 {
   "name": "nktty",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Remote hosts management and automation.",
   "main": "bin/nktty.js",
   "scripts": {
