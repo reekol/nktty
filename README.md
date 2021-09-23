@@ -61,12 +61,12 @@ Options:
 ```json
 ...
  { 
- 	"title": "host1 title",
- 	"host": "192.168.1.1",
- 	"port":22,
- 	"username": "user",
+    "title": "host1 title",
+    "host": "192.168.1.1",
+    "port":22,
+    "username": "user",
     "privateKey": "/home/user/.ssh/id_rsa",
- 	"cmd":null 
+    "cmd":null
  },
  ...
 ```
@@ -74,16 +74,16 @@ Options:
 ```json
 ...
  {
- 	"title": "host1 title",
- 	"host": "192.168.1.1",
- 	"port":22,
- 	"username": "root",
+    "title": "host1 title",
+    "host": "192.168.1.1",
+    "port":22,
+    "username": "root",
     "privateKey": "/home/user/.ssh/id_rsa",
     "jumpToHost": "192.168.1.11",
     "jumpToUsername": "jumpix",
     "jumpToPort": 22,
     "jumpToPrivateKey": "/home/jumpix/.ssh/id_rsa_jump",
- 	"cmd":null
+    "cmd":null
  },
  ...
 ```
