@@ -62,14 +62,32 @@ Options:
 ...
  { 
  	"title": "host1 title",
- 	"addr": "192.168.1.1",
- 	"user": "root",
+ 	"host": "192.168.1.1",
  	"port":22,
- 	"keyFile":"/home/user/.ssh/id_rsa",
+ 	"username": "user",
+    "privateKey": "/home/user/.ssh/id_rsa",
  	"cmd":null 
  },
  ...
 ```
++ - Example Jump host:
+```json
+...
+ {
+ 	"title": "host1 title",
+ 	"host": "192.168.1.1",
+ 	"port":22,
+ 	"username": "root",
+    "privateKey": "/home/user/.ssh/id_rsa",
+    "jumpToHost": "192.168.1.11",
+    "jumpToUsername": "jumpix",
+    "jumpToPort": 22,
+    "jumpToPrivateKey": "/home/jumpix/.ssh/id_rsa_jump",
+ 	"cmd":null
+ },
+ ...
+```
+
 + ./config/commandsAll.json (commands used only in UI mode, to show/check system information)
 + - Example:
 ```json
