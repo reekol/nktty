@@ -58,6 +58,7 @@ const argv = yargs
 	.argv
 
 prompts.override(yargs.argv)
+
 if(argv.B){
 	if(!fs.existsSync(argv.B)) throw new Error('Unable to create config files. Diretory ' + argv.B + ' does not exists!')
 	let dirname = argv.B
@@ -155,11 +156,31 @@ let cliBar = (name, percents, suffix) => {
 
 
 let sshConn = async (options) => {
+//    d(options)
 	options.readyTimeout = 3000
 	return new Promise((resolve, reject) => {
 		let conn = new SSH2()
 		conn.
-		on('ready', () => { resolve(conn) }).
+		on('ready', () => {
+            if(typeof options.h.jumpToAddr !== 'undefined'){
+                conn.forwardOut('127.0.0.1', 12345, options.h.jumpToAddr, options.h.jumpToPort, (err, stream) => {
+                    if(err) reject(err)
+                    let conn2 = new SSH2()
+                        conn2.on('ready', () => { resolve(conn2) }).on('error', e => { reject(e) })
+                        conn2.connect({
+                            sock: stream,
+                            host: options.h.jumpToAddr,
+                            port: options.h.jumpToPort,
+                            username: options.h.jumpToUser,
+                            privateKey: fs.readFileSync(options.h.jumpToKeyFile),
+                            agent: process.env.SSH_AUTH_SOCK,
+                            agentForward: true,
+                        })
+                })
+            }else{
+                resolve(conn)
+            }
+        }).
 		on('error', e => { reject(e) } ).
 		connect(options)
 	})
@@ -182,6 +203,7 @@ let sshExec = async (conn, cmd) => {
 let hostsInfo = async (i,h) => {
 	let error = null
 	let conn = null
+//	d(h)
 	try{
 		conn = await sshConn({
 			host: h.addr,
@@ -189,7 +211,8 @@ let hostsInfo = async (i,h) => {
 			username: h.user,
 			privateKey: fs.readFileSync(h.keyFile),
 			agent: process.env.SSH_AUTH_SOCK,
-			agentForward: true
+			agentForward: true,
+            h:h
 		})
 	}catch(e){ 
 		error = e.message
@@ -216,31 +239,79 @@ let stageTwoLogin = (host,initialCommand) => {
 	let gs = null
 	var conn = new SSH2()
 	conn.on('ready', () => {
-		conn.shell(
-		{
-			term: 'xterm-256color',
-			rows: process.stdout.rows,
-			cols: process.stdout.columns
-		},
-		(err, stream) => {
-			if (err) throw err
-			stream.
-				on('close', () => {
-					conn.end()
-					process.exit(1)
-					}).
-				on('data', data => {
-					if (!gs) gs = stream
-					if (gs._writableState.sync == false) process.stdout.write('' + data)
-				}).
-			stderr.
-				on('data', data => { 
-					d('STDERR: '.red + data)
-					process.exit(1)
-				})
-			if(initialCommand) stream.stdin.write(initialCommand + "\r")
+        if(typeof host.jumpToAddr !== 'undefined'){
+            conn.forwardOut('127.0.0.1', 12345, host.jumpToAddr, host.jumpToPort, (err, stream) => {
+                if(err) reject(err)
+                let conn2 = new SSH2()
+                    conn2.on('ready', () => {
 
-		})
+                        conn2.shell(
+                            {
+                                term: 'xterm-256color',
+                                rows: process.stdout.rows,
+                                cols: process.stdout.columns
+                            },
+                            (err, stream) => {
+                                if (err) throw err
+                                stream.
+                                    on('close', () => {
+                                        conn.end()
+                                        process.exit(1)
+                                        }).
+                                    on('data', data => {
+                                        if (!gs) gs = stream
+                                        if (gs._writableState.sync == false) process.stdout.write('' + data)
+                                    }).
+                                stderr.
+                                    on('data', data => {
+                                        d('STDERR: '.red + data)
+                                        process.exit(1)
+                                    })
+                                if(initialCommand) stream.stdin.write(initialCommand + "\r")
+
+                            })
+
+                    }).on('error', e => { reject(e) })
+
+                    conn2.connect({
+                        sock: stream,
+                        host: host.jumpToAddr,
+                        port: host.jumpToPort,
+                        username: host.jumpToUser,
+                        privateKey: fs.readFileSync(host.jumpToKeyFile),
+                        agent: process.env.SSH_AUTH_SOCK,
+                        agentForward: true,
+                    })
+            })
+        }else{
+
+            conn.shell(
+                {
+                    term: 'xterm-256color',
+                    rows: process.stdout.rows,
+                    cols: process.stdout.columns
+                },
+                (err, stream) => {
+                    if (err) throw err
+                    stream.
+                        on('close', () => {
+                            conn.end()
+                            process.exit(1)
+                            }).
+                        on('data', data => {
+                            if (!gs) gs = stream
+                            if (gs._writableState.sync == false) process.stdout.write('' + data)
+                        }).
+                    stderr.
+                        on('data', data => {
+                            d('STDERR: '.red + data)
+                            process.exit(1)
+                        })
+                    if(initialCommand) stream.stdin.write(initialCommand + "\r")
+
+                })
+
+        }
 	}).connect({
  		host: host.addr,
  		port: host.port,
@@ -279,16 +350,46 @@ let buildPrompt = async (menu1, menu2) => {
 let execOnRemote = async (host,execute) => {
 	let conn = new SSH2()
 	conn.on('ready', () => {
-	conn.exec(execute.cmd, (err, stream) => {
-		if (err) throw err
-		stream.on('close', (code, signal) => {
-			conn.end()
-		}).on('data', data => {
-			d((('<STDOUT time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').green + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDOUT>'.green))
-		}).stderr.on('data', data => {
-			d((('<STDERR time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').red   + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDERR>'.red))
-		})
-	})
+        if(typeof host.jumpToAddr !== 'undefined'){
+            conn.forwardOut('127.0.0.1', 12345, host.jumpToAddr, host.jumpToPort, (err, stream) => {
+                if(err) reject(err)
+                let conn2 = new SSH2()
+                    conn2.on('ready', () => {
+                        conn2.exec(execute.cmd, (err, stream2) => {
+                            if (err) throw err
+                            stream2.on('close', (code, signal) => {
+                                conn2.end()
+                                conn.end()
+                            }).on('data', data => {
+                                d((('<STDOUT time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').green + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDOUT>'.green))
+                            }).stderr.on('data', data => {
+                                d((('<STDERR time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').red   + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDERR>'.red))
+                            })
+                        })
+
+                    }).on('error', e => { reject(e) })
+                    conn2.connect({
+                        sock: stream,
+                        host: host.jumpToAddr,
+                        port: host.jumpToPort,
+                        username: host.jumpToUser,
+                        privateKey: fs.readFileSync(host.jumpToKeyFile),
+                        agent: process.env.SSH_AUTH_SOCK,
+                        agentForward: true,
+                    })
+            })
+        }else{
+            conn.exec(execute.cmd, (err, stream) => {
+                if (err) throw err
+                stream.on('close', (code, signal) => {
+                    conn.end()
+                }).on('data', data => {
+                    d((('<STDOUT time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').green + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDOUT>'.green))
+                }).stderr.on('data', data => {
+                    d((('<STDERR time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').red   + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDERR>'.red))
+                })
+            })
+        }
 	}).
 	connect({
 		host: host.addr,
