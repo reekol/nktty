@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const STATIC_CONFIG = false
 const passowrd = false;
 const crypto = require('crypto')
 const os = require('os')
@@ -16,7 +17,6 @@ const username = require("os").userInfo().username
 let cnfFileRemotes = 'remotes.json'
 let cnfFileCommandsAll = 'commandsAll.json'
 let cnfFileExecute = 'execute.json'
-
 
 const argv = yargs
 	.option('remotes', {
@@ -67,6 +67,9 @@ const argv = yargs
 
 prompts.override(yargs.argv)
 
+const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
+
+const cliParamParse = param => (param.charAt(0) === '@' ? fs.readFileSync(param.substring(1)) : param)
 
 const buildExampleConfig = () => {
 	if(!fs.existsSync(argv.B)) throw new Error('Unable to create config files. Diretory ' + argv.B + ' does not exists!')
@@ -302,7 +305,8 @@ const buildPrompt = async (menu1, menu2) => {
 		}])
 }
 
-(async () => {
+
+;(async () => {
     if(passowrd){
         let response = await prompts({
             type: 'password',
@@ -313,20 +317,27 @@ const buildPrompt = async (menu1, menu2) => {
     }
 
     {
-
         if(argv.B) buildExampleConfig()
 
-        cnfFileRemotes = cnfFileGuess(cnfFileRemotes)
-        cnfFileCommandsAll = cnfFileGuess(cnfFileCommandsAll)
-        cnfFileExecute = cnfFileGuess(cnfFileExecute)
+        let hostsFull, commandsAll, stageTwo
 
-        const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
-        const cliParamParse = param => (param.charAt(0) === '@' ? fs.readFileSync(param.substring(1)) : param)
+        if(typeof STATIC_CONFIG === 'undefined' || !STATIC_CONFIG ){
 
-        const hostsFull = loadConf( argv.R ? argv.R : cnfFileRemotes )
-        const commandsAll = loadConf( argv.C ? argv.C : cnfFileCommandsAll )
-        const stageTwo  = loadConf( argv.E ? argv.E : cnfFileExecute )
+            cnfFileRemotes = cnfFileGuess(cnfFileRemotes)
+            cnfFileCommandsAll = cnfFileGuess(cnfFileCommandsAll)
+            cnfFileExecute = cnfFileGuess(cnfFileExecute)
 
+            hostsFull = loadConf( argv.R ? argv.R : cnfFileRemotes )
+            commandsAll = loadConf( argv.C ? argv.C : cnfFileCommandsAll )
+            stageTwo  = loadConf( argv.E ? argv.E : cnfFileExecute )
+
+        }else{
+
+            hostsFull = STATIC_CONFIG.initialRemotes
+            commandsAll = STATIC_CONFIG.commandsAll
+            stageTwo = STATIC_CONFIG.initialExecute
+
+        }
         const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : cliParamParse(argv.remotes)
         const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : cliParamParse(argv.execute)
         const initialUdeFilter     = typeof argv.ude     === 'undefined' ? '' : cliParamParse(argv.ude)
@@ -343,22 +354,28 @@ const buildPrompt = async (menu1, menu2) => {
         let initialRemotes = await suggestFnc(initialRemotesFilter, hostsFull)
         let initialExecute = initialUdeFilter !=='' ? [{title:"U.D.E.",cmd:initialUdeFilter}] : await suggestFnc(initialExecuteFilter, stageTwo)
 
-        for (let i in initialRemotes){
-            initialRemotes[i].privateKey = fs.readFileSync(initialRemotes[i].privateKey) + ''
-            if(initialRemotes[i].jumpToPrivateKey) initialRemotes[i].jumpToPrivateKey = fs.readFileSync(initialRemotes[i].jumpToPrivateKey) + ''
+        if(typeof STATIC_CONFIG === 'undefined' || !STATIC_CONFIG ){
+            for (let i in initialRemotes){
+                initialRemotes[i].privateKey = fs.readFileSync(initialRemotes[i].privateKey) + ''
+                if(initialRemotes[i].jumpToPrivateKey) initialRemotes[i].jumpToPrivateKey = fs.readFileSync(initialRemotes[i].jumpToPrivateKey) + ''
+            }
         }
 
         if(argv.X){
-            d(JSON.stringify(initialRemotes, null, 4))
+            d(JSON.stringify({
+                initialRemotes: initialRemotes,
+                commandsAll: commandsAll,
+                initialExecute: initialExecute
+            }, null, 4))
             process.exit()
         }
 
+
         let hosts = []
-        let stageTwoLongest = 0
 
-        for(let i in stageTwo) stageTwo[i].value = i
+        for(let i in initialExecute) initialExecute[i].value = i
 
-        stageTwo.sort(sortByVal)
+        initialExecute.sort(sortByVal)
 
         if(initialRemotesFilter !== '' && ( initialUdeFilter !== '' ||  initialExecuteFilter !== '' )){
             for (let remote of initialRemotes){
@@ -368,10 +385,11 @@ const buildPrompt = async (menu1, menu2) => {
             const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
             bar1.start(initialRemotes.length, 0)
             let j = 0
+
+
             for(let i in initialRemotes){
 
                 if(initialRemotes[i].cmd === null) initialRemotes[i].cmd = commandsAll
-
                 hostsInfo(i,initialRemotes[i]).then(async h => {
                     hosts.push(h)
                     j++
@@ -379,14 +397,13 @@ const buildPrompt = async (menu1, menu2) => {
                     if(j === initialRemotes.length ){
                         hosts.sort(sortByVal)
                         bar1.stop()
-                        let response = await buildPrompt(hosts, stageTwo)
+                        let response = await buildPrompt(hosts, initialExecute)
                         if(typeof response.host === 'undefined' || typeof response.action === 'undefned')
                             throw new Error("No selected host or action.")
-                        if(response.action) stageTwoLogin(hosts[response.host],stageTwo[response.action].cmd)
+                        if(response.action) stageTwoLogin(hosts[response.host],initialExecute[response.action].cmd)
                     }
                 })
             }
         }
     }
 })()
-
