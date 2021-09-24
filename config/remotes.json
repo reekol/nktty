@@ -1,23 +1,23 @@
 [
 	{
 		"title": "host1",
-		"addr": "192.168.1.1",
-		"user": "root",
+		"host": "192.168.1.1",
+		"username": "root",
 		"port":22,
-		"keyFile":"/home/user/.ssh/id_rsa",
+		"privateKey":"/home/user/.ssh/id_rsa",
 		"cmd":null },
 	{ 
 		"title": "host2",
-		"addr": "192.168.1.2",
-		"user": "root",
+		"hoat": "192.168.1.2",
+		"username": "root",
 		"port":22,
-		"keyFile":"/home/user/.ssh/id_rsa",
+		"privateKey":"/home/user/.ssh/id_rsa",
 		"cmd":null },
  	{ 
  		"title": "host3",
- 		"addr": "192.168.1.3",
- 		"user": "root",
+ 		"host": "192.168.1.3",
+ 		"username": "root",
  		"port":22,
- 		"keyFile":"/home/user/.ssh/id_rsa",
+ 		"privateKey":"/home/user/.ssh/id_rsa",
  		"cmd":null }
 ]

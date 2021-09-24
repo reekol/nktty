@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const passowrd = false;
+const crypto = require('crypto')
 const os = require('os')
 const fs = require('fs')
 const yargs = require('yargs')
@@ -52,6 +54,11 @@ const argv = yargs
 		description: 'Build example config. files',
 		type: 'string',
 	})
+    .option('config-export', {
+        alias: 'X',
+        description: 'export config to single file',
+        type: 'boolean'
+    })
 	.help()
 	.alias('help', 'h')
 	.version()
@@ -60,7 +67,8 @@ const argv = yargs
 
 prompts.override(yargs.argv)
 
-if(argv.B){
+
+const buildExampleConfig = () => {
 	if(!fs.existsSync(argv.B)) throw new Error('Unable to create config files. Diretory ' + argv.B + ' does not exists!')
 	let dirname = argv.B
 	cnfFileRemotes = dirname + '/' + cnfFileRemotes
@@ -80,6 +88,7 @@ if(argv.B){
         privateKey:"/home/jumpix/.ssh/id_rsa",
         jumpToHost:'192.168.1.1',
         jumpToPort:22,
+        jumpToForwardPort: 12345,
         jumpToUsername:username,
         jumpToPrivateKey:'/home/' + username + '/.ssh/id_rsa',
         cmd:null,
@@ -101,7 +110,7 @@ if(argv.B){
 	process.exit()
 }
 
-let cnfFileGuess = (cnfFile) => {
+const cnfFileGuess = cnfFile => {
 	let f =  cnfFile.toString('utf8')
 	cnfFile = os.homedir() + '/.nktty/' + f
 	if(fs.existsSync(cnfFile)) return cnfFile
@@ -111,30 +120,6 @@ let cnfFileGuess = (cnfFile) => {
 	if(fs.existsSync(cnfFile)) return cnfFile
 	throw new Error('No configuration found for: ' + f)
 }
-
-cnfFileRemotes = cnfFileGuess(cnfFileRemotes)
-cnfFileCommandsAll = cnfFileGuess(cnfFileCommandsAll)
-cnfFileExecute = cnfFileGuess(cnfFileExecute)
-
-const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
-const cliParamParse = param => (param.charAt(0) === '@' ? fs.readFileSync(param.substring(1)) : param)
-
-const hostsFull = loadConf( argv.R ? argv.R : cnfFileRemotes )
-const commandsAll = loadConf( argv.C ? argv.C : cnfFileCommandsAll )
-const stageTwo  = loadConf( argv.E ? argv.E : cnfFileExecute )
-
-const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : cliParamParse(argv.remotes)
-const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : cliParamParse(argv.execute)
-const initialUdeFilter     = typeof argv.ude     === 'undefined' ? '' : cliParamParse(argv.ude)
-
-if(initialExecuteFilter !== '' && initialRemotesFilter === '')
-	throw new Error('You can not set intial execution filters [--execute,-e] without setting initial remotes filter [--remotes,-r]')
-
-if(initialUdeFilter     !== '' && initialRemotesFilter === '')
-	throw new Error('You can not set User Defined Execution   [--ude,-u]     without setting initial remotes filter [--remotes,-r]')
-
-if(initialUdeFilter     !== '' && initialExecuteFilter !== '')
-	throw new Error('You should specify [--ude,-u] or [--execute,-e], not both.')
 
 const suggestFnc = (input, choices) =>  Promise.resolve(choices.filter(i => {
 	let res
@@ -146,14 +131,14 @@ const suggestFnc = (input, choices) =>  Promise.resolve(choices.filter(i => {
 	return res
 }))
 
-let sortByVal = (a, b) => {
+const sortByVal = (a, b) => {
   let keyA = parseInt(a.value), keyB = parseInt(b.value)
   if (keyA < keyB) return -1
   if (keyA > keyB) return 1
   return 0
 }
 
-let cliBar = (name, percents, suffix) => {
+const cliBar = (name, percents, suffix) => {
 	let bar = (name + Math.round(percents) + suffix).padEnd(10)
 	percents = Math.ceil(percents/10)
 	let barColored = ''
@@ -165,19 +150,21 @@ let cliBar = (name, percents, suffix) => {
 	return barColored
 }
 
+const sshConn = async (options, onResolve, onReject ) => {
 
-let sshConn = async (options, onResolve, onReject ) => {
+	options.readyTimeout = typeof options.readyTimeout === 'undefined' ? 5000 : options.readyTimeout // Default timeout
 
-	options.readyTimeout = 5000
 	return new Promise((resolve, reject) => {
 
-        options.privateKey = Buffer.isBuffer(options.privateKey) ? options.privateKey: fs.readFileSync(options.privateKey)
 		let conn = new SSH2()
 		conn.
 		on('ready', () => {
             if(typeof options.jumpToHost !== 'undefined'){
-                conn.forwardOut('127.0.0.1', 12345, options.jumpToHost, options.jumpToPort, (err, stream) => {
+                conn.forwardOut('127.0.0.1', options.jumpToForwardPort, options.jumpToHost, options.jumpToPort, (err, stream) => {
                     if(err) reject(err)
+
+                    options.jumpToReadyTimeout = typeof options.jumpToReadyTimeout === 'undefined' ? 5000 : options.jumpToReadyTimeout // Default timeout
+
                     let conn2 = new SSH2()
                         conn2.on('ready', () => { onResolve ? onResolve(conn2) : resolve(conn2) }).on('error', e => { onReject ? onReject(conn2, e) : reject(e) })
                         conn2.connect({
@@ -185,8 +172,9 @@ let sshConn = async (options, onResolve, onReject ) => {
                             host: options.jumpToHost,
                             port: options.jumpToPort,
                             username: options.jumpToUsername,
-                            privateKey: Buffer.isBuffer(options.jumpToPrivateKey) ? options.jumpToPrivateKey : fs.readFileSync(options.jumpToPrivateKey),
+                            privateKey: options.jumpToPrivateKey,
                             agent: process.env.SSH_AUTH_SOCK,
+                            readyTimeout: options.jumpToReadyTimeout,
                             agentForward: true,
                         })
                     conn2.on('close', () => { conn.end() })
@@ -200,7 +188,7 @@ let sshConn = async (options, onResolve, onReject ) => {
 	})
 }
 
-let sshExec = async (conn, cmd) => {
+const sshExec = async (conn, cmd) => {
 	return new Promise((resolve, reject) => {
 		let received = ''
 		conn.exec(cmd, (err, channel) => {
@@ -214,7 +202,7 @@ let sshExec = async (conn, cmd) => {
 	})
 }
 
-let hostsInfo = async (i,h) => {
+const hostsInfo = async (i,h) => {
 	let error = null
 	let conn = null
 	try{
@@ -240,9 +228,8 @@ let hostsInfo = async (i,h) => {
 	return h
 }
 
-let stageTwoLogin = (host,initialCommand) => {
+const stageTwoLogin = (host,initialCommand) => {
 	let gs = null
-
     sshConn(host,
         conn => {
             conn.shell(
@@ -278,11 +265,11 @@ let stageTwoLogin = (host,initialCommand) => {
     )
 }
 
-let execOnRemote = async (host,execute) => {
+const execOnRemote = async (host,execute) => {
         sshConn(host,conn => {
-            conn.exec(execute.cmd, (err, stream2) => {
+            conn.exec(execute.cmd, (err, stream) => {
                     if (err) throw err
-                    stream2.on('close', (code, signal) => {
+                    stream.on('close', (code, signal) => {
                         conn.end()
                     }).on('data', data => {
                         d((('<STDOUT time="' + new Date().toISOString() + '" host="' + host.title + '" command="' + execute.title + '">').green + '<![CDATA[\n' + data.toString('utf8').trim() + '\n]]>' + '</STDOUT>'.green))
@@ -293,7 +280,7 @@ let execOnRemote = async (host,execute) => {
             })
 }
 
-let buildPrompt = async (menu1, menu2) => {
+const buildPrompt = async (menu1, menu2) => {
 	return await prompts([
 		{
 			suggest:suggestFnc,
@@ -316,44 +303,90 @@ let buildPrompt = async (menu1, menu2) => {
 }
 
 (async () => {
-	let hosts = []
-	let stageTwoLongest = 0
-	for(let i in stageTwo){
-		stageTwo[i].value = i
-		stageTwo[i].title = stageTwo[i].title
-	}
-	stageTwo.sort(sortByVal)
-	
-	let initialRemotes = await suggestFnc(initialRemotesFilter, hostsFull)
-	let initialExecute = initialUdeFilter !=='' ? [{title:"U.D.E.",cmd:initialUdeFilter}] : await suggestFnc(initialExecuteFilter, stageTwo)
+    if(passowrd){
+        let response = await prompts({
+            type: 'password',
+            message: 'Enter your password',
+            name: 'password',
+        })
+        if(crypto.createHash('md5').update(response.password).digest("hex") !== passowrd) process.exit()
+    }
 
-	if(initialRemotesFilter !== '' && ( initialUdeFilter !== '' ||  initialExecuteFilter !== '' )){
-		for (let remote of initialRemotes){
-			for(let execute of initialExecute){
-				execOnRemote(remote,execute)
-			}
-		}
-	}else{
-		const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-		bar1.start(initialRemotes.length, 0)
-		let j = 0
-		for(let i in initialRemotes){
+    {
 
-			if(initialRemotes[i].cmd === null) initialRemotes[i].cmd = commandsAll
+        if(argv.B) buildExampleConfig()
 
-			hostsInfo(i,initialRemotes[i]).then(async h => {
-				hosts.push(h)
-				j++
-				bar1.update(j)
-				if(j === initialRemotes.length ){
-					hosts.sort(sortByVal)
-					bar1.stop()
-					let response = await buildPrompt(hosts, stageTwo)
-					if(typeof response.host === 'undefined' || typeof response.action === 'undefned')
-						throw new Error("No selected host or action.")
-					if(response.action) stageTwoLogin(hosts[response.host],stageTwo[response.action].cmd)
-				}
-			})
-		}
-	}
+        cnfFileRemotes = cnfFileGuess(cnfFileRemotes)
+        cnfFileCommandsAll = cnfFileGuess(cnfFileCommandsAll)
+        cnfFileExecute = cnfFileGuess(cnfFileExecute)
+
+        const loadConf = (addr) => JSON.parse(fs.readFileSync(addr))
+        const cliParamParse = param => (param.charAt(0) === '@' ? fs.readFileSync(param.substring(1)) : param)
+
+        const hostsFull = loadConf( argv.R ? argv.R : cnfFileRemotes )
+        const commandsAll = loadConf( argv.C ? argv.C : cnfFileCommandsAll )
+        const stageTwo  = loadConf( argv.E ? argv.E : cnfFileExecute )
+
+        const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : cliParamParse(argv.remotes)
+        const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : cliParamParse(argv.execute)
+        const initialUdeFilter     = typeof argv.ude     === 'undefined' ? '' : cliParamParse(argv.ude)
+
+        if(initialExecuteFilter !== '' && initialRemotesFilter === '')
+            throw new Error('You can not set intial execution filters [--execute,-e] without setting initial remotes filter [--remotes,-r]')
+
+        if(initialUdeFilter     !== '' && initialRemotesFilter === '')
+            throw new Error('You can not set User Defined Execution   [--ude,-u]     without setting initial remotes filter [--remotes,-r]')
+
+        if(initialUdeFilter     !== '' && initialExecuteFilter !== '')
+            throw new Error('You should specify [--ude,-u] or [--execute,-e], not both.')
+
+        let initialRemotes = await suggestFnc(initialRemotesFilter, hostsFull)
+        let initialExecute = initialUdeFilter !=='' ? [{title:"U.D.E.",cmd:initialUdeFilter}] : await suggestFnc(initialExecuteFilter, stageTwo)
+
+        for (let i in initialRemotes){
+            initialRemotes[i].privateKey = fs.readFileSync(initialRemotes[i].privateKey) + ''
+            if(initialRemotes[i].jumpToPrivateKey) initialRemotes[i].jumpToPrivateKey = fs.readFileSync(initialRemotes[i].jumpToPrivateKey) + ''
+        }
+
+        if(argv.X){
+            d(JSON.stringify(initialRemotes, null, 4))
+            process.exit()
+        }
+
+        let hosts = []
+        let stageTwoLongest = 0
+
+        for(let i in stageTwo) stageTwo[i].value = i
+
+        stageTwo.sort(sortByVal)
+
+        if(initialRemotesFilter !== '' && ( initialUdeFilter !== '' ||  initialExecuteFilter !== '' )){
+            for (let remote of initialRemotes){
+                for(let execute of initialExecute) execOnRemote(remote,execute)
+            }
+        }else{
+            const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+            bar1.start(initialRemotes.length, 0)
+            let j = 0
+            for(let i in initialRemotes){
+
+                if(initialRemotes[i].cmd === null) initialRemotes[i].cmd = commandsAll
+
+                hostsInfo(i,initialRemotes[i]).then(async h => {
+                    hosts.push(h)
+                    j++
+                    bar1.update(j)
+                    if(j === initialRemotes.length ){
+                        hosts.sort(sortByVal)
+                        bar1.stop()
+                        let response = await buildPrompt(hosts, stageTwo)
+                        if(typeof response.host === 'undefined' || typeof response.action === 'undefned')
+                            throw new Error("No selected host or action.")
+                        if(response.action) stageTwoLogin(hosts[response.host],stageTwo[response.action].cmd)
+                    }
+                })
+            }
+        }
+    }
 })()
+

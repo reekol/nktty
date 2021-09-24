@@ -10,7 +10,7 @@
   "dependencies": {
     "cli-progress": "^3.9.0",
     "colors": "^1.4.0",
-    "prompts": "^2.4.0",
+    "prompts": "^2.4.1",
     "ssh2": ">=1.4.0",
     "yargs": "^16.2.0"
   },

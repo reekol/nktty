@@ -66,6 +66,7 @@ Options:
     "port":22,
     "username": "user",
     "privateKey": "/home/user/.ssh/id_rsa",
+    "readyTimeout": 5000,
     "cmd":null
  },
  ...
@@ -79,10 +80,13 @@ Options:
     "port":22,
     "username": "root",
     "privateKey": "/home/user/.ssh/id_rsa",
+    "readyTimeout": 5000,
     "jumpToHost": "192.168.1.11",
     "jumpToUsername": "jumpix",
     "jumpToPort": 22,
+    "jumpToForwardPort": 1234,
     "jumpToPrivateKey": "/home/jumpix/.ssh/id_rsa_jump",
+    "jumpToReadyTimeout": 5000,
     "cmd":null
  },
  ...
