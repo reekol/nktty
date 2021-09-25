@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
+// BEGIN STATIC_CONFIG
 const STATIC_CONFIG = false
-const passowrd = false;
+// END STATIC_CONFIG
+
+const password = false;
 const crypto = require('crypto')
 const os = require('os')
 const fs = require('fs')
@@ -306,14 +309,33 @@ const buildPrompt = async (menu1, menu2) => {
 }
 
 
+const encrypt = (text, pass) => {
+    pass = crypto.createHash('sha256').update(String(pass)).digest('base64')
+    const iv = crypto.randomBytes(16)
+    const cipher = crypto.createCipheriv('aes-256-ctr', Buffer.from(pass, 'base64'), iv)
+    const encrypted = Buffer.concat([cipher.update(text), cipher.final()])
+    return {
+        iv: iv.toString('hex'),
+        content: encrypted.toString('hex')
+    }
+}
+
+const decrypt = (hash, pass ) => {
+    pass = crypto.createHash('sha256').update(String(pass)).digest('base64')
+    const decipher = crypto.createDecipheriv('aes-256-ctr', Buffer.from(pass, 'base64'), Buffer.from(hash.iv, 'hex'))
+    const decrpyted = Buffer.concat([decipher.update(Buffer.from(hash.content, 'hex')), decipher.final()])
+    return decrpyted.toString()
+}
+
+
 ;(async () => {
-    if(passowrd){
+    if(password){
         let response = await prompts({
             type: 'password',
             message: 'Enter your password',
             name: 'password',
         })
-        if(crypto.createHash('md5').update(response.password).digest("hex") !== passowrd) process.exit()
+        if(crypto.createHash('md5').update(response.password).digest("hex") !== password) process.exit()
     }
 
     {
@@ -332,12 +354,14 @@ const buildPrompt = async (menu1, menu2) => {
             stageTwo  = loadConf( argv.E ? argv.E : cnfFileExecute )
 
         }else{
-
-            hostsFull = STATIC_CONFIG.initialRemotes
-            commandsAll = STATIC_CONFIG.commandsAll
-            stageTwo = STATIC_CONFIG.initialExecute
+            let pass = await prompts({  type: 'password', message: 'Password to DEcrypt configuration', name: 'input' })
+            let STATIC = JSON.parse(decrypt(STATIC_CONFIG, pass.input))
+            hostsFull = STATIC.initialRemotes
+            commandsAll = STATIC.commandsAll
+            stageTwo = STATIC.initialExecute
 
         }
+
         const initialRemotesFilter = typeof argv.remotes === 'undefined' ? '' : cliParamParse(argv.remotes)
         const initialExecuteFilter = typeof argv.execute === 'undefined' ? '' : cliParamParse(argv.execute)
         const initialUdeFilter     = typeof argv.ude     === 'undefined' ? '' : cliParamParse(argv.ude)
@@ -362,11 +386,13 @@ const buildPrompt = async (menu1, menu2) => {
         }
 
         if(argv.X){
-            d(JSON.stringify({
+            let pass = await prompts({  type: 'password', message: 'Password to encrypt configuration', name: 'input' })
+            const output = 'const STATIC_CONFIG = ' + JSON.stringify(encrypt(JSON.stringify({
                 initialRemotes: initialRemotes,
                 commandsAll: commandsAll,
                 initialExecute: initialExecute
-            }, null, 4))
+            }, null, 4),pass.input))
+            d(output)
             process.exit()
         }
 
