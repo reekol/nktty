@@ -51,7 +51,8 @@ Options:
   -C, --config-commandsall  override path to commandsAll.json           [string]
   -E, --config-execute      override path to execute.json               [string]
   -B, --config-build        Build example config. files                 [string]
-  -h, --help                Show help                                  [boolean]
+  -X, --config-export       Export Encrypted config.                   [boolean]
+  -h, --help                Show help.                                 [boolean]
   -v, --version             Show version number                        [boolean]
 ```
 
