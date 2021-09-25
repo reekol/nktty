@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 // BEGIN STATIC_CONFIG
+
 const STATIC_CONFIG = false
+
 // END STATIC_CONFIG
 
 const password = false;
@@ -59,7 +61,7 @@ const argv = yargs
 	})
     .option('config-export', {
         alias: 'X',
-        description: 'export config to single file',
+        description: 'Export config to single file',
         type: 'boolean'
     })
 	.help()
