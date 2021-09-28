@@ -311,3 +311,58 @@ rtt min/avg/max/mdev = 1.863/1.863/1.863/0.000 ms
 91
 ]]></STDOUT>
 ```
+
+## Compiling to portable binary with configuration and keys included.
+
+!ATTENTION ... while this is usefull in some very rare cases, it is realy dangerous (despite using AES-256).
+I strongly advise you to cosider using proper ssh key storage.
+Do not use this option if you don't know what and why you are doing it.
+
+nktty can be compiled as a portable binary with configuration and keys included in encrypted storage.
+It is not shipped this way (on purpose).
+This requires some minor code modifications. 
+
+After setting up nktty you can dump your current configuration using -X option.
+You will be asked for a password ( will be used to encrypt config. )
+Remember your password because you will be assked for it every time you start your portable binary.
+
+```bash
+nktty -X
+? Password to encrypt configuration › 
+
+```
+After that a large string containing something similar to this will be shown.
+```
+const STATIC_CONFIG = {"iv":"2b9627b5f1d94febd556e8925a86fb0d","content":"e33...
+```
+
+Copy this string and re/place it in bin/nktty.js
+```
+// BEGIN STATIC_CONFIG
+
+const STATIC_CONFIG = false
+
+// END STATIC_CONFIG
+```
+
+now you are ready to compile you own binary with credentials included:
+In the root directory of nktty repo:
+Step 1:
+
+```bash
+cd /mygit/nktty
+```
+Set up pkg
+```bash
+npm install -g pkg
+```
+Now create builds:
+```
+npm run build
+```
+bin files will be in ../build directory
+
+
+
+
+
