@@ -382,8 +382,10 @@ const decrypt = (hash, pass ) => {
 
         if(typeof STATIC_CONFIG === 'undefined' || !STATIC_CONFIG ){
             for (let i in initialRemotes){
+              if(typeof initialRemotes[i].privateKey !== 'undefined'){
                 initialRemotes[i].privateKey = fs.readFileSync(initialRemotes[i].privateKey) + ''
                 if(initialRemotes[i].jumpToPrivateKey) initialRemotes[i].jumpToPrivateKey = fs.readFileSync(initialRemotes[i].jumpToPrivateKey) + ''
+              }
             }
         }
 
